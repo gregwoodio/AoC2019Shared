@@ -24,8 +24,7 @@ const (
 )
 
 func isValid(inst int) bool {
-	oper := operation(inst)
-	return oper >= add && oper < eof
+	return inst >= int(add) && inst < int(eof)
 }
 
 // IntCodeInterpreter is a interpreter for the int code language defined in
