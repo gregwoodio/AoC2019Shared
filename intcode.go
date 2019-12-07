@@ -12,7 +12,7 @@ import (
 type operation int
 
 const (
-	add operation = iota
+	add operation = iota + 1
 	multiply
 	input
 	output
@@ -24,8 +24,7 @@ const (
 )
 
 func isValid(inst int) bool {
-	oper := operation(inst)
-	return oper >= add && oper < eof
+	return inst >= int(add) && inst < int(eof)
 }
 
 // IntCodeInterpreter is a interpreter for the int code language defined in
@@ -55,7 +54,7 @@ func (ici IntCodeInterpreter) Process(r io.Reader, w io.Writer) int {
 	for {
 		oper := ici.inst[ip] % 10
 
-		if isValid(oper) {
+		if !isValid(oper) {
 			return ici.inst[0]
 		}
 
