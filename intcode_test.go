@@ -99,7 +99,7 @@ func TestProcessIntCode(t *testing.T) {
 	// var mockOutput bytes.Buffer
 
 	for _, td := range testDatas {
-		ici := NewIntCodeInterpreter(td.input)
+		ici := NewIntCodeInterpreter("test", td.input)
 
 		go ici.Process()
 

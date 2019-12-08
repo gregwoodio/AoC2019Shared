@@ -27,6 +27,7 @@ func isValid(inst int) bool {
 // IntCodeInterpreter is a interpreter for the int code language defined in
 // Advent Of Code 2019 day 2 and 5 (and more!)
 type IntCodeInterpreter struct {
+	name       string
 	inst       []int
 	ip         int
 	Input      chan int
@@ -37,12 +38,13 @@ type IntCodeInterpreter struct {
 
 // NewIntCodeInterpreter creates an int code interpreter with the
 // given instructions.
-func NewIntCodeInterpreter(input string) *IntCodeInterpreter {
+func NewIntCodeInterpreter(name, input string) *IntCodeInterpreter {
 	interpreter := IntCodeInterpreter{
+		name:   name,
 		inst:   parseInstructions(input),
 		ip:     0,
-		Input:  make(chan int),
-		Output: make(chan int),
+		Input:  make(chan int, 2),
+		Output: make(chan int, 2),
 		Done:   make(chan bool),
 	}
 
@@ -50,8 +52,7 @@ func NewIntCodeInterpreter(input string) *IntCodeInterpreter {
 }
 
 // Process runs the program in the IntCodeInterpreter's instructions. It returns
-// the value in the 0 instruction at the end. Predefined inputs can be provided
-// into the reader for testing, or provide os.Stdin and os.Stdout.
+// the value in the 0 instruction at the end.
 func (ici *IntCodeInterpreter) Process() int {
 	// ip := 0
 	var isParam1Immediate, isParam2Immediate bool
