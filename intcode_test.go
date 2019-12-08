@@ -1,6 +1,7 @@
 package aoc2019shared
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -95,24 +96,21 @@ func TestProcessIntCode(t *testing.T) {
 		},
 	}
 
-	// var mockInput bytes.Buffer
-	// var mockOutput bytes.Buffer
-
 	for _, td := range testDatas {
 		ici := NewIntCodeInterpreter("test", td.input)
 
-		go ici.Process()
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go ici.Process(&wg)
 
 		ici.Input <- td.userInput
-		<-ici.Output
-		done := <-ici.Done
+		out := <-ici.Output
 
-		if *ici.LastOutput != td.expectedOutput {
-			t.Errorf("Expected %d but was %d\n", td.expectedOutput, ici.LastOutput)
-		}
+		wg.Wait()
 
-		if done != true {
-			t.Errorf("Expected %t but was %t\n", done, !done)
+		if out != td.expectedOutput {
+			t.Errorf("Expected %d but was %d\n", td.expectedOutput, out)
 		}
 	}
 }

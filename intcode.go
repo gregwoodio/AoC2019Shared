@@ -4,6 +4,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type operation int
@@ -32,7 +33,6 @@ type IntCodeInterpreter struct {
 	ip         int
 	Input      chan int
 	Output     chan int
-	Done       chan bool
 	LastOutput *int
 }
 
@@ -45,7 +45,6 @@ func NewIntCodeInterpreter(name, input string) *IntCodeInterpreter {
 		ip:     0,
 		Input:  make(chan int, 2),
 		Output: make(chan int, 2),
-		Done:   make(chan bool),
 	}
 
 	return &interpreter
@@ -53,16 +52,16 @@ func NewIntCodeInterpreter(name, input string) *IntCodeInterpreter {
 
 // Process runs the program in the IntCodeInterpreter's instructions. It returns
 // the value in the 0 instruction at the end.
-func (ici *IntCodeInterpreter) Process() int {
-	// ip := 0
+func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int {
 	var isParam1Immediate, isParam2Immediate bool
-	// reader := bufio.NewReader(r)
 
 	for {
 		oper := ici.inst[ici.ip] % 10
 
 		if !isValid(oper) {
-			ici.Done <- true
+			if wg != nil {
+				wg.Done()
+			}
 			return ici.inst[0]
 		}
 
