@@ -75,7 +75,7 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 		if param1Mode == 1 {
 			p1 = &ici.inst[ici.ip+1]
 		} else if param1Mode == 2 {
-			p1 = &ici.inst[ici.RelativeBase]
+			p1 = &ici.inst[ici.RelativeBase+ici.inst[ici.ip+1]]
 		} else {
 			p1 = &ici.inst[ici.inst[ici.ip+1]]
 		}
@@ -88,7 +88,7 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 			if param2Mode == 1 {
 				p2 = &ici.inst[ici.ip+2]
 			} else if param2Mode == 2 {
-				p2 = &ici.inst[ici.RelativeBase]
+				p2 = &ici.inst[ici.RelativeBase+ici.inst[ici.ip+2]]
 			} else {
 				p2 = &ici.inst[ici.inst[ici.ip+2]]
 			}
@@ -159,6 +159,7 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 
 		case relativeBaseOffset:
 			ici.RelativeBase += *p1
+			ici.ip += 2
 			break
 		}
 	}

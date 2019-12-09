@@ -162,3 +162,26 @@ func TestProcessIntCodeDay09_02(t *testing.T) {
 		t.Errorf("Expected %d but was %d\n", td.expectedOutput, out)
 	}
 }
+
+func TestProcessIntCodeDay09_03(t *testing.T) {
+	td := testData{
+		input:          "9,20,204,-5,99,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
+		expectedOutput: 15,
+	}
+
+	ici := NewIntCodeInterpreter("test", td.input)
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go ici.Process(&wg)
+
+	ici.Input <- td.userInput
+	out := <-ici.Output
+
+	wg.Wait()
+
+	if out != td.expectedOutput {
+		t.Errorf("Expected %d but was %d\n", td.expectedOutput, out)
+	}
+}
