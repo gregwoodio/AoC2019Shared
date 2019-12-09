@@ -36,7 +36,7 @@ type IntCodeInterpreter struct {
 	RelativeBase int64
 	Input        chan int64
 	Output       chan int64
-	LastOutput   *int64
+	LastOutput   int64
 }
 
 // NewIntCodeInterpreter creates an int code interpreter with the
@@ -57,8 +57,6 @@ func NewIntCodeInterpreter(name, input string) *IntCodeInterpreter {
 // Process runs the program in the IntCodeInterpreter's instructions. It returns
 // the value in the 0 instruction at the end.
 func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
-	var param1Mode, param2Mode int64
-
 	for {
 		oper := ici.inst[ici.ip] % 100
 
@@ -69,96 +67,63 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 			return ici.inst[0]
 		}
 
-		param1Mode = (ici.inst[ici.ip] / 100) % 10
-
-		var p1, p2, p3 *int64
-		if param1Mode == 1 {
-			p1 = &ici.inst[ici.ip+1]
-		} else if param1Mode == 2 {
-			p1 = &ici.inst[ici.RelativeBase+ici.inst[ici.ip+1]]
-		} else {
-			p1 = &ici.inst[ici.inst[ici.ip+1]]
-		}
-
-		if oper == 3 || oper == 4 || oper == 9 {
-			param2Mode = 0
-		} else {
-			param2Mode = (ici.inst[ici.ip] / 1000) % 10
-
-			if param2Mode == 1 {
-				p2 = &ici.inst[ici.ip+2]
-			} else if param2Mode == 2 {
-				p2 = &ici.inst[ici.RelativeBase+ici.inst[ici.ip+2]]
-			} else {
-				p2 = &ici.inst[ici.inst[ici.ip+2]]
-			}
-
-			if oper != 5 && oper != 6 {
-				p3 = &ici.inst[ici.inst[ici.ip+3]]
-			}
-		}
-
 		switch operation(oper) {
 		case add:
-			*p3 = *p1 + *p2
+			ici.setParam(3, ici.getParam(1)+ici.getParam(2))
 			ici.ip += 4
 			break
 
 		case multiply:
-			*p3 = *p1 * *p2
+			ici.setParam(3, ici.getParam(1)*ici.getParam(2))
 			ici.ip += 4
 			break
 
 		case input:
-			val := <-ici.Input
-
 			// Parameters that an instruction writes to will never be immediate
-			p1 = &ici.inst[ici.inst[ici.ip+1]]
-
-			*p1 = val
+			ici.setParam(1, <-ici.Input)
 			ici.ip += 2
 
 		case output:
-			ici.LastOutput = p1
-			ici.Output <- *p1
+			ici.LastOutput = ici.getParam(1)
+			ici.Output <- ici.getParam(1)
 			ici.ip += 2
 			break
 
 		case jumpTrue:
-			if *p1 != 0 {
-				ici.ip = *p2
+			if ici.getParam(1) != 0 {
+				ici.ip = ici.getParam(2)
 			} else {
 				ici.ip += 3
 			}
 
 		case jumpFalse:
-			if *p1 == 0 {
-				ici.ip = *p2
+			if ici.getParam(1) == 0 {
+				ici.ip = ici.getParam(2)
 			} else {
 				ici.ip += 3
 			}
 			break
 
 		case lessThan:
-			if *p1 < *p2 {
-				*p3 = 1
+			if ici.getParam(1) < ici.getParam(2) {
+				ici.setParam(3, 1)
 			} else {
-				*p3 = 0
+				ici.setParam(3, 0)
 			}
 			ici.ip += 4
 			break
 
 		case equals:
-			if *p1 == *p2 {
-				*p3 = 1
+			if ici.getParam(1) == ici.getParam(2) {
+				ici.setParam(3, 1)
 			} else {
-				*p3 = 0
+				ici.setParam(3, 0)
 			}
 			ici.ip += 4
 			break
 
 		case relativeBaseOffset:
-			ici.RelativeBase += *p1
+			ici.RelativeBase += ici.getParam(1)
 			ici.ip += 2
 			break
 		}
@@ -181,4 +146,43 @@ func parseInstructions(input string) []int64 {
 	}
 
 	return output
+}
+
+func (ici IntCodeInterpreter) getParam(num int) int64 {
+	if num < 1 || num > 3 {
+		log.Fatalf("Invalid parameter number: %d\n", num)
+	}
+
+	val := ici.inst[ici.ip+int64(num)]
+	inst := ici.inst[ici.ip]
+	mult := 10
+	for i := 0; i < num; i++ {
+		mult *= 10
+	}
+
+	mode := (inst / int64(mult)) % 10
+
+	if mode == 0 {
+		return ici.inst[val]
+	} else if mode == 1 {
+		return val
+	}
+
+	// mode 2
+	return ici.inst[val+ici.RelativeBase]
+
+}
+
+func (ici IntCodeInterpreter) setParam(index, num int64) {
+	val := ici.inst[ici.ip+int64(index)]
+	mode := ici.inst[ici.ip] % 10
+
+	if mode == 0 {
+		ici.inst[val] = num
+	}
+
+	// cannot set mode 1 values
+
+	// mode 2
+	ici.inst[val+ici.RelativeBase] = num
 }
