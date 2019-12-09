@@ -1,15 +1,16 @@
 package aoc2019shared
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 )
 
 type testData struct {
 	input          string
-	expectedZero   int
-	expectedOutput int
-	userInput      int
+	expectedZero   int64
+	expectedOutput int64
+	userInput      int64
 }
 
 func TestProcessIntCode(t *testing.T) {
@@ -112,5 +113,52 @@ func TestProcessIntCode(t *testing.T) {
 		if out != td.expectedOutput {
 			t.Errorf("Expected %d but was %d\n", td.expectedOutput, out)
 		}
+	}
+}
+
+func TestProcessIntCodeDay09_01(t *testing.T) {
+	td := testData{
+		input: "1102,34915192,34915192,7,4,7,99,0",
+	}
+
+	ici := NewIntCodeInterpreter("test", td.input)
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go ici.Process(&wg)
+
+	ici.Input <- td.userInput
+	out := <-ici.Output
+
+	wg.Wait()
+
+	fmt.Println(out)
+	outStr := fmt.Sprintf("%d", out)
+	if len(outStr) != 16 {
+		t.Errorf("Expected output was not a 16 digit number")
+	}
+}
+
+func TestProcessIntCodeDay09_02(t *testing.T) {
+	td := testData{
+		input:          "104,1125899906842624,99",
+		expectedOutput: 1125899906842624,
+	}
+
+	ici := NewIntCodeInterpreter("test", td.input)
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go ici.Process(&wg)
+
+	ici.Input <- td.userInput
+	out := <-ici.Output
+
+	wg.Wait()
+
+	if out != td.expectedOutput {
+		t.Errorf("Expected %d but was %d\n", td.expectedOutput, out)
 	}
 }

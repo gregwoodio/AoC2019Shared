@@ -2,6 +2,7 @@ package aoc2019shared
 
 import (
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,33 +19,36 @@ const (
 	jumpFalse
 	lessThan
 	equals
+	relativeBaseOffset
 	eof
 )
 
-func isValid(inst int) bool {
-	return inst >= int(add) && inst < int(eof)
+func isValid(inst int64) bool {
+	return inst >= int64(add) && inst < int64(eof)
 }
 
 // IntCodeInterpreter is a interpreter for the int code language defined in
 // Advent Of Code 2019 day 2 and 5 (and more!)
 type IntCodeInterpreter struct {
-	name       string
-	inst       []int
-	ip         int
-	Input      chan int
-	Output     chan int
-	LastOutput *int
+	name         string
+	inst         []int64
+	ip           int64
+	RelativeBase int64
+	Input        chan int64
+	Output       chan int64
+	LastOutput   *int64
 }
 
 // NewIntCodeInterpreter creates an int code interpreter with the
 // given instructions.
 func NewIntCodeInterpreter(name, input string) *IntCodeInterpreter {
 	interpreter := IntCodeInterpreter{
-		name:   name,
-		inst:   parseInstructions(input),
-		ip:     0,
-		Input:  make(chan int, 2),
-		Output: make(chan int, 2),
+		name:         name,
+		inst:         parseInstructions(input),
+		ip:           0,
+		RelativeBase: 0,
+		Input:        make(chan int64, 2),
+		Output:       make(chan int64, 2),
 	}
 
 	return &interpreter
@@ -52,11 +56,11 @@ func NewIntCodeInterpreter(name, input string) *IntCodeInterpreter {
 
 // Process runs the program in the IntCodeInterpreter's instructions. It returns
 // the value in the 0 instruction at the end.
-func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int {
-	var isParam1Immediate, isParam2Immediate bool
+func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
+	var param1Mode, param2Mode int64
 
 	for {
-		oper := ici.inst[ici.ip] % 10
+		oper := ici.inst[ici.ip] % 100
 
 		if !isValid(oper) {
 			if wg != nil {
@@ -65,21 +69,21 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int {
 			return ici.inst[0]
 		}
 
-		isParam1Immediate = (ici.inst[ici.ip]/100)%10 == 1
+		param1Mode = (ici.inst[ici.ip] / 100) % 10
 
-		var p1, p2, p3 *int
-		if isParam1Immediate {
+		var p1, p2, p3 *int64
+		if param1Mode == 1 {
 			p1 = &ici.inst[ici.ip+1]
 		} else {
 			p1 = &ici.inst[ici.inst[ici.ip+1]]
 		}
 
-		if oper == 3 || oper == 4 {
-			isParam2Immediate = false
+		if oper == 3 || oper == 4 || oper == 9 {
+			param2Mode = 0
 		} else {
-			isParam2Immediate = (ici.inst[ici.ip]/1000)%10 == 1
+			param2Mode = (ici.inst[ici.ip] / 1000) % 10
 
-			if isParam2Immediate {
+			if param2Mode == 1 {
 				p2 = &ici.inst[ici.ip+2]
 			} else {
 				p2 = &ici.inst[ici.inst[ici.ip+2]]
@@ -148,23 +152,27 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int {
 			}
 			ici.ip += 4
 			break
+
+		case relativeBaseOffset:
+			ici.RelativeBase += *p1
+			break
 		}
 	}
 }
 
-func parseInstructions(input string) []int {
-	output := []int{}
+func parseInstructions(input string) []int64 {
+	output := make([]int64, math.MaxUint16)
 
 	split := strings.Split(input, ",")
 
-	for _, strVal := range split {
-		intVal, err := strconv.Atoi(strVal)
+	for i, strVal := range split {
+		intVal, err := strconv.ParseInt(strVal, 10, 0)
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		output = append(output, intVal)
+		output[i] = intVal
 	}
 
 	return output
