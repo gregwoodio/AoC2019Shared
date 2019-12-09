@@ -74,6 +74,8 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 		var p1, p2, p3 *int64
 		if param1Mode == 1 {
 			p1 = &ici.inst[ici.ip+1]
+		} else if param1Mode == 2 {
+			p1 = &ici.inst[ici.RelativeBase]
 		} else {
 			p1 = &ici.inst[ici.inst[ici.ip+1]]
 		}
@@ -85,6 +87,8 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 
 			if param2Mode == 1 {
 				p2 = &ici.inst[ici.ip+2]
+			} else if param2Mode == 2 {
+				p2 = &ici.inst[ici.RelativeBase]
 			} else {
 				p2 = &ici.inst[ici.inst[ici.ip+2]]
 			}
