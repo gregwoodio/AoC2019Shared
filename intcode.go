@@ -79,9 +79,9 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 			break
 
 		case input:
-			// Parameters that an instruction writes to will never be immediate
 			ici.setParam(1, <-ici.Input)
 			ici.ip += 2
+			break
 
 		case output:
 			ici.LastOutput = ici.getParam(1)
@@ -95,6 +95,7 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 			} else {
 				ici.ip += 3
 			}
+			break
 
 		case jumpFalse:
 			if ici.getParam(1) == 0 {
@@ -175,10 +176,17 @@ func (ici IntCodeInterpreter) getParam(num int) int64 {
 
 func (ici IntCodeInterpreter) setParam(index, num int64) {
 	val := ici.inst[ici.ip+int64(index)]
-	mode := ici.inst[ici.ip] % 10
+	inst := ici.inst[ici.ip]
+	mult := 10
+	for i := 0; i < int(index); i++ {
+		mult *= 10
+	}
+
+	mode := (inst / int64(mult)) % 10
 
 	if mode == 0 {
 		ici.inst[val] = num
+		return
 	}
 
 	// cannot set mode 1 values

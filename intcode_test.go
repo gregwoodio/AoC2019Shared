@@ -185,3 +185,62 @@ func TestProcessIntCodeDay09_03(t *testing.T) {
 		t.Errorf("Expected %d but was %d\n", td.expectedOutput, out)
 	}
 }
+
+// Additional testcases supplied by /u/Kache
+func TestProcessIntCodeDay09_04(t *testing.T) {
+	testCases := []testData{
+		testData{
+			input:          "109,-1,4,1,99",
+			expectedOutput: -1,
+		},
+		testData{
+			input:          "109,-1,104,1,99",
+			expectedOutput: 1,
+		},
+		testData{
+			input:          "109,-1,204,1,99",
+			expectedOutput: 109,
+		},
+		testData{
+			input:          "109,1,9,2,204,-6,99",
+			expectedOutput: 204,
+		},
+		testData{
+			input:          "109,1,109,9,204,-6,99",
+			expectedOutput: 204,
+		},
+		testData{
+			input:          "109,1,209,-1,204,-106,99",
+			expectedOutput: 204,
+		},
+		testData{
+			input:          "109,1,3,3,204,2,99",
+			userInput:      42,
+			expectedOutput: 42,
+		},
+		testData{
+			input:          "109,1,203,2,204,2,99",
+			userInput:      42,
+			expectedOutput: 42,
+		},
+	}
+
+	for _, td := range testCases {
+		ici := NewIntCodeInterpreter("test", td.input)
+
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go ici.Process(&wg)
+
+		ici.Input <- td.userInput
+		out := <-ici.Output
+
+		wg.Wait()
+		fmt.Println(out)
+
+		if out != td.expectedOutput {
+			t.Errorf("Expected %d but was %d\n", td.expectedOutput, out)
+		}
+	}
+}
