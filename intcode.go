@@ -31,12 +31,11 @@ func isValid(inst int64) bool {
 // Advent Of Code 2019 day 2 and 5 (and more!)
 type IntCodeInterpreter struct {
 	name         string
-	inst         []int64
 	ip           int64
+	Inst         []int64
 	RelativeBase int64
 	Input        chan int64
 	Output       chan int64
-	LastOutput   int64
 }
 
 // NewIntCodeInterpreter creates an int code interpreter with the
@@ -44,7 +43,7 @@ type IntCodeInterpreter struct {
 func NewIntCodeInterpreter(name, input string) *IntCodeInterpreter {
 	interpreter := IntCodeInterpreter{
 		name:         name,
-		inst:         parseInstructions(input),
+		Inst:         parseInstructions(input),
 		ip:           0,
 		RelativeBase: 0,
 		Input:        make(chan int64, 2),
@@ -58,13 +57,13 @@ func NewIntCodeInterpreter(name, input string) *IntCodeInterpreter {
 // the value in the 0 instruction at the end.
 func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 	for {
-		oper := ici.inst[ici.ip] % 100
+		oper := ici.Inst[ici.ip] % 100
 
 		if !isValid(oper) {
 			if wg != nil {
 				wg.Done()
 			}
-			return ici.inst[0]
+			return ici.Inst[0]
 		}
 
 		switch operation(oper) {
@@ -84,7 +83,6 @@ func (ici *IntCodeInterpreter) Process(wg *sync.WaitGroup) int64 {
 			break
 
 		case output:
-			ici.LastOutput = ici.getParam(1)
 			ici.Output <- ici.getParam(1)
 			ici.ip += 2
 			break
@@ -154,8 +152,8 @@ func (ici IntCodeInterpreter) getParam(num int) int64 {
 		log.Fatalf("Invalid parameter number: %d\n", num)
 	}
 
-	val := ici.inst[ici.ip+int64(num)]
-	inst := ici.inst[ici.ip]
+	val := ici.Inst[ici.ip+int64(num)]
+	inst := ici.Inst[ici.ip]
 	mult := 10
 	for i := 0; i < num; i++ {
 		mult *= 10
@@ -164,19 +162,19 @@ func (ici IntCodeInterpreter) getParam(num int) int64 {
 	mode := (inst / int64(mult)) % 10
 
 	if mode == 0 {
-		return ici.inst[val]
+		return ici.Inst[val]
 	} else if mode == 1 {
 		return val
 	}
 
 	// mode 2
-	return ici.inst[val+ici.RelativeBase]
+	return ici.Inst[val+ici.RelativeBase]
 
 }
 
 func (ici IntCodeInterpreter) setParam(index, num int64) {
-	val := ici.inst[ici.ip+int64(index)]
-	inst := ici.inst[ici.ip]
+	val := ici.Inst[ici.ip+int64(index)]
+	inst := ici.Inst[ici.ip]
 	mult := 10
 	for i := 0; i < int(index); i++ {
 		mult *= 10
@@ -185,12 +183,12 @@ func (ici IntCodeInterpreter) setParam(index, num int64) {
 	mode := (inst / int64(mult)) % 10
 
 	if mode == 0 {
-		ici.inst[val] = num
+		ici.Inst[val] = num
 		return
 	}
 
 	// cannot set mode 1 values
 
 	// mode 2
-	ici.inst[val+ici.RelativeBase] = num
+	ici.Inst[val+ici.RelativeBase] = num
 }

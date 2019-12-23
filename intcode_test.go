@@ -116,6 +116,31 @@ func TestProcessIntCode(t *testing.T) {
 	}
 }
 
+func TestProcessIntCodeDay05_01(t *testing.T) {
+	testCases := []testData{
+		testData{
+			input: "1002,4,3,4,33",
+		},
+		testData{
+			input: "1101,100,-1,4,0",
+		},
+	}
+
+	for _, td := range testCases {
+		ici := NewIntCodeInterpreter("test", td.input)
+
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go ici.Process(&wg)
+		wg.Wait()
+
+		if ici.Inst[4] != 99 {
+			t.Errorf("Expected instruction 4 to be %d but was %d", 99, ici.Inst[4])
+		}
+	}
+}
+
 func TestProcessIntCodeDay09_01(t *testing.T) {
 	td := testData{
 		input: "1102,34915192,34915192,7,4,7,99,0",
